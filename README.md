@@ -2,7 +2,7 @@
 
 ## About
 Rust application using raw winapi bindings.
-The purpose of this program use memory manipulation to modify the game, nothing advanced. 
+The purpose of this program is to use memory manipulation to modify the game, nothing advanced. 
 Is C++ a better option for doing this? Yes, yes it is...
 
 This is just for educational/testing purposes. 
