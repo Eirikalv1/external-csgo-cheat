@@ -1,7 +1,7 @@
-use std::mem::{size_of, size_of_val, zeroed, transmute_copy};
-use std::str;
+use std::mem::{size_of, size_of_val, transmute_copy, zeroed};
 use std::ptr::null_mut;
-use winapi::um::tlhelp32::{MODULEENTRY32, TH32CS_SNAPMODULE, Module32Next};
+use std::str;
+use winapi::um::tlhelp32::{Module32Next, MODULEENTRY32, TH32CS_SNAPMODULE};
 use winapi::um::winnt::PROCESS_ALL_ACCESS;
 use winapi::{
     shared::{
@@ -14,7 +14,6 @@ use winapi::{
         processthreadsapi::OpenProcess,
         tlhelp32::{CreateToolhelp32Snapshot, Process32Next, PROCESSENTRY32, TH32CS_SNAPPROCESS},
     },
-    vc::vadefs::uintptr_t,
 };
 
 pub struct Memory {
@@ -33,7 +32,6 @@ impl Memory {
             let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
             while Process32Next(snapshot, &mut entry) == 1 {
-
                 let process_entry_u8: [u8; 260] = transmute_copy(&entry.szExeFile);
                 let process_entry = std::str::from_utf8(&process_entry_u8[..]).unwrap();
 
@@ -42,7 +40,7 @@ impl Memory {
                     process = OpenProcess(PROCESS_ALL_ACCESS, 0, id);
                     break;
                 }
-            } 
+            }
 
             CloseHandle(snapshot);
         }
@@ -55,29 +53,34 @@ impl Memory {
             entry.dwSize = size_of::<MODULEENTRY32>() as u32;
 
             let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, self.id);
-                while Module32Next(snapshot, &mut entry) == 1 {
+            while Module32Next(snapshot, &mut entry) == 1 {
                 let module_entry_u8: [u8; 256] = transmute_copy(&entry.szModule);
                 let module_entry = std::str::from_utf8(&module_entry_u8[..]).unwrap();
                 if module_entry.starts_with(module_name) {
                     CloseHandle(snapshot);
                     return entry.modBaseAddr as usize;
-                    
                 }
-            } 
+            }
         }
         unreachable!("Could not find the module")
     }
 
-    pub fn read(&self, address: usize) -> u32 {
-        let mut buffer: [u8; 4] = [0; 4];
+    pub fn read<T: Default>(&self, address: usize) -> T {
+        let mut buffer: T = Default::default();
         unsafe {
-            ReadProcessMemory(self.process, address as LPCVOID, buffer.as_mut_ptr() as LPVOID, size_of_val(&buffer), null_mut());
+            ReadProcessMemory(
+                self.process,
+                address as LPCVOID,
+                &mut buffer as *mut T as LPVOID,
+                size_of_val(&buffer),
+                null_mut(),
+            );
         }
-        u32::from_le_bytes(buffer)
+        buffer
     }
 
-    pub fn write(&self, address: uintptr_t, value: LPVOID) -> bool {
-        unsafe { WriteProcessMemory(self.process, address as LPVOID, value, size_of_val(&value), null_mut()) == 1 }
+    pub unsafe fn write(&self, address: usize, value: LPVOID) -> bool {
+        WriteProcessMemory(self.process, address as LPVOID, value, size_of_val(&value), null_mut()) == 1
     }
 }
 

@@ -1,20 +1,21 @@
 use external_csgo_cheat::memory::Memory;
+use winapi::shared::minwindef::LPVOID;
 
 fn main() {
-    let a = "csgo.exe";
-    let mem = Memory::new(&a);
-    
-    let local_player_offset = 0xDEA964;
-    let flags_offset = 0x104;
-    let force_jump_offset = 0x52BBC7C;
+    let app = "csgo.exe";
+    let mem = Memory::new(app);
 
-    let client = mem.get_module_adress("client.dll");
+    let local_player_offset = 0xA46B9C;
+    let health = 0x230;
+
+    let base = mem.get_module_adress("server.dll");
 
     loop {
-        let local_player = mem.read(client+0xDEA964+0x100);
+        let local_player_pointer: usize = mem.read(base + local_player_offset);
+        let local_player: usize = mem.read(local_player_pointer + health);
+        unsafe { mem.write(local_player_pointer + health, 124 as LPVOID) };
         println!("{}", local_player);
 
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
-    
 }
