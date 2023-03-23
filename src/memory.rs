@@ -79,8 +79,16 @@ impl Memory {
         buffer
     }
 
-    pub unsafe fn write(&self, address: usize, value: LPVOID) -> bool {
-        WriteProcessMemory(self.process, address as LPVOID, value, size_of_val(&value), null_mut()) == 1
+    pub fn write<T: Default>(&self, address: usize, buffer: T) -> bool {
+        unsafe {
+            WriteProcessMemory(
+                self.process,
+                address as LPVOID,
+                &buffer as *const T as LPVOID,
+                size_of_val(&buffer),
+                null_mut(),
+            ) == 1
+        }
     }
 }
 

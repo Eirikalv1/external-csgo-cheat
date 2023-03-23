@@ -1,5 +1,4 @@
 use external_csgo_cheat::memory::Memory;
-use winapi::shared::minwindef::LPVOID;
 
 fn main() {
     let app = "csgo.exe";
@@ -13,7 +12,7 @@ fn main() {
     loop {
         let local_player_pointer: usize = mem.read(base + local_player_offset);
         let local_player: usize = mem.read(local_player_pointer + health);
-        unsafe { mem.write(local_player_pointer + health, 124 as LPVOID) };
+        println!("{}", mem.write(local_player_pointer + health, 124));
         println!("{}", local_player);
 
         std::thread::sleep(std::time::Duration::from_millis(100));
